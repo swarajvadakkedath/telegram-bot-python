@@ -102,4 +102,64 @@ try:
 
         # Friendly greetings
         if text in ["hi", "hello", "hey"]:
-            bot.reply_to(message, "Hey 🙂 How can I help y_
+            bot.reply_to(message, "Hey 🙂 How can I help you today?")
+            return
+
+        # If user asks opinion
+        if "what do you think" in text or "your opinion" in text:
+            bot.reply_to(
+                message,
+                "I can share an opinion 👍\n\n"
+                "Quick question first:\n"
+                "What’s your goal here?"
+            )
+            return
+
+        # If user sounds unsure
+        if any(word in text for word in ["confused", "not sure", "stuck"]):
+            bot.reply_to(
+                message,
+                "That’s okay — let’s break it down.\n\n"
+                "What are you trying to achieve right now?"
+            )
+            return
+
+        # Gentle correction (only when useful)
+        if "perfect" in text or "best possible" in text:
+            bot.reply_to(
+                message,
+                "Small note 🙂\n\n"
+                "Chasing *perfect* can slow progress.\n"
+                "Usually, *good + shipped* beats *perfect + late*.\n\n"
+                "Want help defining a solid version?"
+            )
+            return
+
+        # Tech-related guidance
+        if any(word in text for word in ["wordpress", "custom", "react", "html"]):
+            bot.reply_to(
+                message,
+                "Both approaches can work 👍\n\n"
+                "A quick comparison:\n"
+                "• WordPress → faster, easier updates\n"
+                "• Custom code → more control, more effort\n\n"
+                "What matters more to you right now?"
+            )
+            return
+
+        # Default helpful response
+        bot.reply_to(
+            message,
+            "Got it 👍\n\n"
+            "Can you share a bit more detail so I can help better?"
+        )
+
+    # ---------------- START BOT ----------------
+
+    bot.delete_webhook(drop_pending_updates=True)
+    bot.polling()
+
+except Exception as e:
+    print(f"CRITICAL ERROR: {e}")
+    while True:
+        time.sleep(3600)
