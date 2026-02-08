@@ -8,158 +8,92 @@ from commands import register_commands
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-ALLOWED_USER_ID = int(os.getenv("ALLOWED_USER_ID", "0"))
 
-notes = []
+# -----------------------------
+# Bot personality (core behavior)
+# -----------------------------
+PERSONA = {
+    "name": "Clawdbot",
+    "style": "friendly",
+    "role": "companion and online assistant"
+}
 
 try:
     bot = telebot.TeleBot(TOKEN)
     register_commands(bot)
 
-    def is_allowed(message):
-        return message.from_user and message.from_user.id == ALLOWED_USER_ID
-
-    # ---------------- BASIC COMMANDS ----------------
-
+    # -----------------------------
+    # Start / Hello
+    # -----------------------------
     @bot.message_handler(commands=["start", "hello"])
-    def start_bot(message):
-        if not is_allowed(message):
-            return
-
+    def send_welcome(message):
         bot.reply_to(
             message,
             "👋 Hi! I’m *Clawdbot*.\n\n"
             "I’m here to help you think, decide, and build better.\n"
-            "Ask anything — I’ll guide you and gently correct you *only when needed* 🙂",
-            parse_mode="Markdown",
+            "Ask anything — I’ll guide you naturally and correct you only when needed 🙂",
+            parse_mode="Markdown"
         )
 
-    @bot.message_handler(commands=["help"])
-    def help_cmd(message):
-        if not is_allowed(message):
-            return
-
-        bot.reply_to(
-            message,
-            "🛠 *What I can do*\n\n"
-            "• Answer questions\n"
-            "• Suggest better solutions\n"
-            "• Point out mistakes (politely)\n"
-            "• Help with decisions\n\n"
-            "You can also save notes:\n"
-            "/note <text>\n"
-            "/notes\n"
-            "/clear",
-            parse_mode="Markdown",
-        )
-
-    # ---------------- NOTES ----------------
-
-    @bot.message_handler(commands=["note"])
-    def add_note(message):
-        if not is_allowed(message):
-            return
-
-        text = message.text.replace("/note", "").strip()
-        if not text:
-            bot.reply_to(message, "Usage: /note <your note>")
-            return
-
-        notes.append(text)
-        bot.reply_to(message, "✅ Noted.")
-
-    @bot.message_handler(commands=["notes"])
-    def show_notes(message):
-        if not is_allowed(message):
-            return
-
-        if not notes:
-            bot.reply_to(message, "You don’t have any notes yet.")
-            return
-
-        reply = "📝 *Your Notes*\n\n"
-        for i, note in enumerate(notes, 1):
-            reply += f"{i}. {note}\n"
-
-        bot.reply_to(message, reply, parse_mode="Markdown")
-
-    @bot.message_handler(commands=["clear"])
-    def clear_notes(message):
-        if not is_allowed(message):
-            return
-
-        notes.clear()
-        bot.reply_to(message, "🗑 Notes cleared.")
-
-    # ---------------- SMART CHAT ----------------
-
+    # -----------------------------
+    # Smart human-like message handler
+    # -----------------------------
     @bot.message_handler(func=lambda msg: True)
-    def assistant(message):
-        if not is_allowed(message):
+    def smart_reply(message):
+        text = message.text.strip()
+        text_lower = text.lower()
+
+        # --- Greetings ---
+        if text_lower in ["hi", "hello", "hey", "yo", "hii"]:
+            bot.reply_to(message, "Hey 🙂 What’s on your mind?")
             return
 
-        text = message.text.lower()
-
-        # Friendly greetings
-        if text in ["hi", "hello", "hey"]:
-            bot.reply_to(message, "Hey 🙂 How can I help you today?")
-            return
-
-        # If user asks opinion
-        if "what do you think" in text or "your opinion" in text:
+        # --- Capability question ---
+        if "what can you do" in text_lower or "help me with" in text_lower:
             bot.reply_to(
                 message,
-                "I can share an opinion 👍\n\n"
-                "Quick question first:\n"
-                "What’s your goal here?"
+                "I can help you:\n"
+                "• think through problems\n"
+                "• compare options\n"
+                "• improve ideas\n"
+                "• spot mistakes gently\n\n"
+                "What are you working on right now?"
             )
             return
 
-        # If user sounds unsure
-        if any(word in text for word in ["confused", "not sure", "stuck"]):
+        # --- Decision / comparison ---
+        if "should i" in text_lower or "which is better" in text_lower:
             bot.reply_to(
                 message,
-                "That’s okay — let’s break it down.\n\n"
-                "What are you trying to achieve right now?"
+                "I can help 👍\n"
+                "Tell me your goal and any limits you have (time, money, skill)."
             )
             return
 
-        # Gentle correction (only when useful)
-        if "perfect" in text or "best possible" in text:
+        # --- Opinion seeking ---
+        if "what do you think" in text_lower:
             bot.reply_to(
                 message,
-                "Small note 🙂\n\n"
-                "Chasing *perfect* can slow progress.\n"
-                "Usually, *good + shipped* beats *perfect + late*.\n\n"
-                "Want help defining a solid version?"
+                "I’ll give you an honest take 🙂\n"
+                "Share a bit more context so I don’t guess."
             )
             return
 
-        # Tech-related guidance
-        if any(word in text for word in ["wordpress", "custom", "react", "html"]):
-            bot.reply_to(
-                message,
-                "Both approaches can work 👍\n\n"
-                "A quick comparison:\n"
-                "• WordPress → faster, easier updates\n"
-                "• Custom code → more control, more effort\n\n"
-                "What matters more to you right now?"
-            )
-            return
-
-        # Default helpful response
+        # --- Default companion response ---
         bot.reply_to(
             message,
-            "Got it 👍\n\n"
-            "Can you share a bit more detail so I can help better?"
+            "Got it 👍\n"
+            "Tell me a little more so I can help properly."
         )
 
-    # ---------------- START BOT ----------------
-
+    # -----------------------------
+    # Start polling
+    # -----------------------------
     bot.delete_webhook(drop_pending_updates=True)
-    bot.polling()
+    bot.polling(none_stop=True)
 
 except Exception as e:
     print(f"CRITICAL ERROR: {e}")
+    print("Fix TELEGRAM_BOT_TOKEN and restart.")
     while True:
         time.sleep(3600)
